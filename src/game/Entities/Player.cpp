@@ -18410,19 +18410,20 @@ bool Player::IsSpellFitByClassAndRace(uint32 spell_id, uint32* pReqlevel /*= nul
                 if (skillRCEntry->flags & SKILL_FLAG_NOT_TRAINABLE)
                     return false;
 
-                if (pReqlevel)                              // show trainers list case
-                {
-                    if (skillRCEntry->reqLevel)
-                    {
-                        *pReqlevel = skillRCEntry->reqLevel;
-                        return true;
-                    }
-                }
-                else                                        // check availble case at train
-                {
-                    if (skillRCEntry->reqLevel && GetLevel() < skillRCEntry->reqLevel)
-                        return false;
-                }
+                // lfm skillrc excluded
+                //if (pReqlevel)                              // show trainers list case
+                //{
+                //    if (skillRCEntry->reqLevel)
+                //    {
+                //        *pReqlevel = skillRCEntry->reqLevel;
+                //        return true;
+                //    }
+                //}
+                //else                                        // check availble case at train
+                //{
+                //    if (skillRCEntry->reqLevel && GetLevel() < skillRCEntry->reqLevel)
+                //        return false;
+                //}
             }
         }
 
