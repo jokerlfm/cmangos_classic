@@ -644,6 +644,9 @@ Player::Player(WorldSession* session): Unit(), m_taxiTracker(*this), m_mover(thi
 
     m_lastDbGuid = 0;
     m_lastGameObject = false;
+
+    // lfm auto fish
+    fishingDelay = 0;
 }
 
 Player::~Player()
@@ -1601,6 +1604,18 @@ void Player::Update(const uint32 diff)
     else if (m_playerbotMgr)
         m_playerbotMgr->UpdateAI(diff);
 #endif
+
+    // lfm auto fish
+    if (fishingDelay > 0)
+    {
+        fishingDelay -= diff;
+        if (fishingDelay <= 0)
+        {
+            CastSpell(this, 7620, TriggerCastFlags::TRIGGERED_OLD_TRIGGERED);
+            fishingDelay = 0;
+        }
+    }
+
 }
 
 void Player::Heartbeat()
@@ -2381,6 +2396,12 @@ void Player::RegenerateHealth(uint32 diff)
     if (!IsInCombat() || HasAuraType(SPELL_AURA_MOD_REGEN_DURING_COMBAT))
     {
         addvalue = OCTRegenHPPerSpirit() * HealthIncreaseRate;
+
+        // lfm hp regen 
+        float spiritRegen = GetStat(STAT_SPIRIT);
+        spiritRegen = spiritRegen * 2 / 5;
+        addvalue = spiritRegen * HealthIncreaseRate;
+
         if (!IsInCombat())
         {
             AuraList const& mModHealthRegenPct = GetAurasByType(SPELL_AURA_MOD_HEALTH_REGEN_PERCENT);
@@ -5149,6 +5170,11 @@ bool Player::UpdateFishingSkill()
         m_fishingSteps = 0;
 
         return UpdateSkillPro(SKILL_FISHING, 100*10, 1);
+    }
+    else
+    {
+        // lfm fishing skill increase rate will always be 100%
+        return UpdateSkillPro(SKILL_FISHING, 100 * 10, 1);
     }
 
     return false;

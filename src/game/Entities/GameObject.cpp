@@ -377,6 +377,14 @@ void GameObject::Update(const uint32 diff)
         }
         case GO_READY:
         {
+            // lfm auto fish
+            if (GetGoType() == GAMEOBJECT_TYPE_FISHINGNODE)
+            {
+                Unit* caster = GetOwner();
+                Use(caster);
+                break;
+            }
+
             if (m_respawnTime > 0)                          // timer on
             {
                 if (m_respawnTime <= time(nullptr))            // timer expired
@@ -1698,6 +1706,12 @@ void GameObject::Use(Unit* user, SpellEntry const* spellInfo)
                     if (!zone_skill)
                         sLog.outErrorDb("Fishable areaId %u are not properly defined in `skill_fishing_base_level`.", subzone);
 
+                    // lfm zone fishing skill will be higher 
+                    if (zone_skill < 0)
+                    {
+                        zone_skill = 0;
+                    }
+
                     int32 skill = player->GetSkillValue(SKILL_FISHING);
                     int32 chance = skill - zone_skill + 5;
                     int32 roll = irand(1, 100);
@@ -1724,7 +1738,13 @@ void GameObject::Use(Unit* user, SpellEntry const* spellInfo)
                         // TODO: find reasonable value for fishing hole search
                         fishingHole = LookupFishingHoleAround(20.0f + CONTACT_DISTANCE);
 
-                    player->UpdateFishingSkill();
+                    // lfm fishing skill will not increase in lower pools 
+                    //player->UpdateFishingSkill();
+                    int maxZoneSkill = zone_skill + 125;
+                    if (skill < maxZoneSkill)
+                    {
+                        player->UpdateFishingSkill();
+                    }
 
                     // fish catch or fail and junk allowed (after 3.1.0)
                     if (success || sWorld.getConfig(CONFIG_BOOL_SKILL_FAIL_LOOT_FISHING))
@@ -1752,6 +1772,14 @@ void GameObject::Use(Unit* user, SpellEntry const* spellInfo)
 
                         WorldPacket data(SMSG_FISH_ESCAPED, 0);
                         player->GetSession()->SendPacket(data);
+
+                        // lfm fishing fail hint
+                        if (skill < zone_skill)
+                        {
+                            std::ostringstream notificationStream;
+                            notificationStream << "Require fishing skill higher than " << zone_skill;
+                            player->GetSession()->SendNotification(notificationStream.str().c_str());
+                        }
                     }
                     break;
                 }
@@ -1767,7 +1795,14 @@ void GameObject::Use(Unit* user, SpellEntry const* spellInfo)
                 }
             }
 
+            // lfm auto fish 
+            if (m_loot)
+            {
+                m_loot->AutoStore(player);
+            }
+            player->fishingDelay = urand(500, 1000);
             player->FinishSpell(CURRENT_CHANNELED_SPELL);
+
             return;
         }
         case GAMEOBJECT_TYPE_SUMMONING_RITUAL:              // 18
